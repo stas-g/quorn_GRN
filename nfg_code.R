@@ -36,11 +36,10 @@ time_points <- list(tvec, tvec, tvec, tvec, tvec)
 #a subset of first 500 genes
 ind <- 1 : 500
 ts_test <- lapply(TS_data[[1]], FUN = function(x) x[ind, ])
-reg_ind <- which(rownames(ts_test[[1]]) %in% regs)
+# reg_ind <- which(rownames(ts_test[[1]]) %in% regs)
 
 
-params <- expand.grid(c('RF', 'ET'), c('all', 'sqrt'))
-colnames(params) <- c("tree.method", "K")
+params <- expand.grid(tree.method = c('RF', 'ET'), K = c('all', 'sqrt'))
 
 res <- lapply(1 : nrow(params), FUN = function(i) {
   mod <- dynGENIE3(ts_test[1], time_points[1], regulators = reg_ind, tree.method = params[i,]$tree.method, K = params[i,]$K)
@@ -116,6 +115,7 @@ cond <- all_data[(6 + (j - 1) * 35) : (5 + 35 * j)]
 x <- cond[1 : 500, ]
 rr <- regs[which(regs %in% rownames(x))]
 
+
 write.table(x, file = "/home/ngrinber/quorn_grn/test_expr.txt", sep = "\t", quote = FALSE, col.names = NA)
 write.table(rr, file = "/home/ngrinber/quorn_grn/test_tfs.txt", sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)
 
@@ -125,7 +125,7 @@ write.table(do.call(cbind, ts_rand), file = "/home/ngrinber/quorn_grn/rand_expr.
 #Gerate bootstrap values
 java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/dist/aracne.jar \
 -e /home/ngrinber/quorn_grn/test_expr.txt \
--o /home/ngrinber/quorn_grn/aracne_test/bootstrap_rand \
+-o /home/ngrinber/quorn_grn/aracne_test/bootstrap \
 --pvalue 1E-8 \
 --seed 1 \
 --calculateThreshold
@@ -134,14 +134,14 @@ for i in {1..100}
 do
 java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/dist/aracne.jar \
 -e /home/ngrinber/quorn_grn/test_expr.txt \
--o /home/ngrinber/quorn_grn/aracne_test/bootstrap_rand \
+-o /home/ngrinber/quorn_grn/aracne_test/bootstrap \
 --pvalue 1E-8 \
 -t /home/ngrinber/quorn_grn/test_tfs.txt \
 --seed $i
 done
 # Consolidate, i.e. combine the bootstraps into a final network file
 java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/dist/aracne.jar \
--o /home/ngrinber/quorn_grn/aracne_test/bootstrap_rand \
+-o /home/ngrinber/quorn_grn/aracne_test/bootstrap \
 --consolidate
 
 #------------------------------------------
@@ -200,7 +200,7 @@ par(mfrow = c(1, 2))
 plot(dng3_$weight, aracne_$MI)
 boxplot(dng3$weight ~ dng3$in_aracne)
 
-hist(dng3[!(dng3$id %in% ind),]$weight)
+hist(dng3[!(dng3$ID %in% ind),]$weight)
 hist(dng3_$weight)
 
 
