@@ -1,11 +1,10 @@
-vst=/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/aracne_all_conditions
+vst=/home/ngrinber/quorn_grn/
 
 for x in {1..4}; do 
-	source activate aracne 
 	outdir=/home/ngrinber/quorn_grn/aracne_bootstraps/cond_$x
 	mkdir -p $outdir
 	java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/dist/aracne.jar \
-	-e ${vst}/L2FC_filter_condition_$x.txt \
+	-e ${vst}/L2FC_filtered_data/L2FC_filter_condition_$x.txt \
 	-o $outdir \
 	--pvalue 1E-8 \
 	--calculateThreshold
@@ -25,3 +24,12 @@ for x in {1..4}; do
 	--consolidate
 	####Plot tri cluster genes  
 done 
+
+java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/dist/aracne.jar \
+-e /home/ngrinber/quorn_grn//L2FC_filtered_data/L2FC_filter_condition_1.txt \
+-o /home/ngrinber/quorn_grn/aracne_test/bootstrap \
+--pvalue 1E-8 \
+--seed 1 \
+--calculateThreshold
+
+cp $vst/{L2FC_filter_condition_,transcription_factors_conditon_}{1..4}.txt /home/ngrinber/quorn_grn/
