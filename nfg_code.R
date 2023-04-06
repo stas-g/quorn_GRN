@@ -350,6 +350,13 @@ java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/
 --consolidate
 
 
+	java -Xmx5G -jar /home/ngrinber/projects/niab/gene_regulatory_network/ARACNe-AP/dist/aracne.jar \
+	-e ${vst}/L2FC_filtered_data/L2FC_filter_condition_$x.txt \
+	-o $outdir \
+	--pvalue 1E-8 \
+	--seed 10 \
+	--calculateThreshold
+
 
 
 
