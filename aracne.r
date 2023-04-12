@@ -90,6 +90,12 @@ aracne_tri <- lapply(1 : 4, FUN = function(i) {
     }
 }) %>% do.call(rbind,.)
 
+aracne_vst <- read.csv("/home/ngrinber/quorn_grn/aracne_bootstraps/vst_nobase/network.txt", sep = "\t")
+aracne_vst$id <- paste(aracne_vst$Regulator, aracne_vst$Target, sep = "_")
+aracne_vst <- aracne_vst[order(aracne_vst$id),]
+aracne_vst$cond <- "all"
+aracne_vst$human <- "vst"
+
 all_output <- rbind(aracne_output0, aracne_output, aracne_perm, aracne_tri)
 ##reading the data in-------->>
 
@@ -123,6 +129,8 @@ for(i in 1 : 4) hist(-log10(aracne_output[[i]]$pvalue), main = paste0("condition
 ggplot(all_output, aes(y = MI, x = human, fill = human)) + geom_boxplot() + facet_wrap(cond ~ .)
 ggplot(all_output, aes(y = ..density.., x = MI, fill = human)) + geom_histogram(alpha = 0.5) + facet_wrap(cond ~ .)
 
+ggplot(rbind(all_output, aracne_vst), aes(y = MI, x = human, fill = human)) + geom_boxplot()
+    
 #pairwise comaprison of MI between differentn conditions (for those pairs that exist for both)
 par(mfrow = c(2, 3))
 for(i in 1 : 3) {
