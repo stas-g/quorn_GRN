@@ -143,12 +143,6 @@ for(i in 1 : 3) {
     }
 }
 
-
-
-
-
-
-
 #creating permuted datasets-------->>
 setwd("/home/ngrinber/quorn_grn/")
 
