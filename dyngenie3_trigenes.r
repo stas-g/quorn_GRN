@@ -4,8 +4,10 @@ library(ggplot2)
 library(data.table)
 library(scales)
 
+source("/home/ngrinber/projects/niab/gene_regulatory_network/install/dynGENIE3.R")
 setwd("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/")
 
+FILE <- "/home/ngrinber/quorn_grn/dynGENIE3_results"
 ##reading the data in-------->>
 
 base <- read.csv("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/aracne_all_conditions/vst.txt", header = TRUE, sep = "\t", row.names = 1)[, 1 : 5]
@@ -26,8 +28,10 @@ tfs <- lapply(1 : 4, FUN = function(i) {
 tri_regs <- c("g6430", "g6432")
 tri_genes <- c("g6429", "g6431", "g6426", "g6434", "g6435", "g6436", "g6437")
 
+TRI_GENES <- c("g6429" = "TRI4", "g6431" = "TRI5", "g6430" = "TRI6", "g6426" = "TRI8", "g6432" = "TRI10", "g6434" = "TRI11", "g6435" = "TRI12", "g6436" = "TRI13", "g6437" = "TRI14")
+
 #--------------------------------------------------------------------
-#separating conditions; creating expr dfs per rep (list of 4 conditions containing list of 5 time-series, 7 times points each)
+#separating conditions; creating expr dfs per rep (list of 4 conditions containing list of 5 (rep) time-series, 7 times points each)
 TS_data <- lapply(1 : 4, FUN = function(j) {
   cond <- read.table(sprintf("/home/ngrinber/quorn_grn/L2FC_filtered_data/L2FC_filter_condition_%s.txt", j))
   out <- lapply(1 : 5, FUN = function(i) {
@@ -46,11 +50,57 @@ tvec <- 0 : 6
 names(tvec) <- colnames(TS_data[[1]][[1]])
 time_points <- list(tvec, tvec, tvec, tvec, tvec)
 
-#indices of regulator genes
-reg_ind <- lapply(1 : 4, FUN = function(i) which(rownames(TS_data[[i]][[1]]) %in% tfs[[i]]))
+#run condition cond
+setwd("/home/ngrinber/projects/niab/gene_regulatory_network/install/")
+for(cond in 1 : 4) {
+  mod <- dynGENIE3(TS_data[[cond]], time_points, regulators = tfs[[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
+  res <- get.link.list(mod$weight.matrix)
+  res$ID <- paste(res$regulatory.gene, res$target.gene, sep = ".")
+  res <- res[order(res$ID),]
+
+  saveRDS(res, file = file.path(FILE, sprintf("cond%s_RF_sqrt.rds", cond)))
+
+  message(sprintf("dynGENIE3 on condition %s: DONE!\n", cond))
+}
+
+##permutation tests-------------->>>>>
+TS_rand <- lapply(TS_data, FUN = function(x){
+    lapply(x, FUN = function(z) {
+      rn <- rownames(z)
+      z <- lapply(1 : ncol(z), FUN = function(i) sample(z[,i])) %>% do.call(cbind, .)
+      rownames(z) <- rn
+      dimnames(z) <- list(rn, paste0("tp", 1 : ncol(z)))
+      z
+    })
+  })
+
+for(cond in 1 : 4) {
+  mod <- dynGENIE3(TS_rand[[cond]], time_points, regulators = tfs[[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
+  res <- get.link.list(mod$weight.matrix)
+  res$ID <- paste(res$regulatory.gene, res$target.gene, sep = ".")
+  res <- res[order(res$ID),]
+
+  saveRDS(res, file = file.path(FILE, sprintf("perm_cond%s_RF_sqrt.rds", cond)))
+
+  message(sprintf("dynGENIE3 on permutated condition %s: DONE!\n", cond))
+}
 
 
+message('end of script')
+q('no')
 
+##permutation tests-------------->>>>>
+# for(cond in 1 : 4) {
+#   z <- lapply(TS_data[[cond]], FUN = function(x) x[rownames(x) %in% c(tri_regs, tri_genes),])
 
+#   tf <- tfs[[cond]][tfs[[cond]] %in% tri_regs]
+#   mod <- dynGENIE3(z, time_points, regulators = tf, tree.method = "RF", K = "sqrt", verbose = TRUE)
+#   res <- get.link.list(mod$weight.matrix)
+#   res$ID <- paste(res$regulatory.gene, res$target.gene, sep = ".")
+#   res <- res[order(res$ID),]
 
+#   saveRDS(res, file = file.path(FILE, sprintf("perm_cond%s_%s_RF_sqrt.rds", tree.method)))
+
+#   message(sprintf("dynGENIE3 on permutated condition %s: DONE!\n", cond))
+# }
 ###
