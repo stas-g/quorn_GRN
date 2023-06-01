@@ -38,8 +38,8 @@ tri_dat <- lapply(1 : 4, FUN = function(i) {
     tmp$cond <- i
     tmp
 }) %>% do.call(rbind, .)
-tri_dat0 <- base[rownames(base) %in% c(tri_regs, tri_genes),]
-tri_dat0 <- rowMeans(tri_dat0)
+# tri_dat0 <- base[rownames(base) %in% c(tri_regs, tri_genes),]
+# tri_dat0 <- rowMeans(tri_dat0)
 
 tri_dat <- melt(tri_dat, id = c("gene", "cond"))
 setnames(tri_dat, c("variable", "value"), c("tp", "expr"))
@@ -143,6 +143,7 @@ for(i in 1 : 3) {
     }
 }
 
+#######CREATING DATASETS FOR DYNGENIE3
 #creating permuted datasets-------->>
 setwd("/home/ngrinber/quorn_grn/")
 

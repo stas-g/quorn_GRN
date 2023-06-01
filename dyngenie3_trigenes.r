@@ -52,23 +52,23 @@ time_points <- list(tvec, tvec, tvec, tvec, tvec)
 
 #run condition cond
 setwd("/home/ngrinber/projects/niab/gene_regulatory_network/install/")
-for(cond in 1 : 4) {
-  mod <- dynGENIE3(TS_data[[cond]], time_points, regulators = tfs[[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
-  res <- get.link.list(mod$weight.matrix)
-  res$ID <- paste(res$regulatory.gene, res$target.gene, sep = ".")
-  res <- res[order(res$ID),]
+# for(cond in 1 : 4) {
+#   mod <- dynGENIE3(TS_data[[cond]], time_points, regulators = tfs[[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
+#   res <- get.link.list(mod$weight.matrix)
+#   res$id <- paste(res$regulatory.gene, res$target.gene, sep = "_")
+#   res <- res[order(res$id),]
 
-  saveRDS(res, file = file.path(FILE, sprintf("cond%s_RF_sqrt.rds", cond)))
+#   saveRDS(res, file = file.path(FILE, sprintf("cond%s_RF_sqrt.rds", cond)))
 
-  message(sprintf("dynGENIE3 on condition %s: DONE!\n", cond))
-}
+#   message(sprintf("dynGENIE3 on condition %s: DONE!\n", cond))
+# }
 
 ##permutation tests-------------->>>>>
 TS_rand <- lapply(TS_data, FUN = function(x){
     lapply(x, FUN = function(z) {
       rn <- rownames(z)
       z <- lapply(1 : ncol(z), FUN = function(i) sample(z[,i])) %>% do.call(cbind, .)
-      rownames(z) <- rn
+      z <- lapply(1 : nrow(z), FUN = function(i) sample(z[i,])) %>% do.call(rbind, .)
       dimnames(z) <- list(rn, paste0("tp", 1 : ncol(z)))
       z
     })
@@ -77,8 +77,8 @@ TS_rand <- lapply(TS_data, FUN = function(x){
 for(cond in 1 : 4) {
   mod <- dynGENIE3(TS_rand[[cond]], time_points, regulators = tfs[[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
   res <- get.link.list(mod$weight.matrix)
-  res$ID <- paste(res$regulatory.gene, res$target.gene, sep = ".")
-  res <- res[order(res$ID),]
+  res$id <- paste(res$regulatory.gene, res$target.gene, sep = "_")
+  res <- res[order(res$id),]
 
   saveRDS(res, file = file.path(FILE, sprintf("perm_cond%s_RF_sqrt.rds", cond)))
 
@@ -89,18 +89,6 @@ for(cond in 1 : 4) {
 message('end of script')
 q('no')
 
-##permutation tests-------------->>>>>
-# for(cond in 1 : 4) {
-#   z <- lapply(TS_data[[cond]], FUN = function(x) x[rownames(x) %in% c(tri_regs, tri_genes),])
 
-#   tf <- tfs[[cond]][tfs[[cond]] %in% tri_regs]
-#   mod <- dynGENIE3(z, time_points, regulators = tf, tree.method = "RF", K = "sqrt", verbose = TRUE)
-#   res <- get.link.list(mod$weight.matrix)
-#   res$ID <- paste(res$regulatory.gene, res$target.gene, sep = ".")
-#   res <- res[order(res$ID),]
 
-#   saveRDS(res, file = file.path(FILE, sprintf("perm_cond%s_%s_RF_sqrt.rds", tree.method)))
-
-#   message(sprintf("dynGENIE3 on permutated condition %s: DONE!\n", cond))
-# }
-###
+TRI_DAT <- lapply(TS_dat, FUN = function(z) z)
