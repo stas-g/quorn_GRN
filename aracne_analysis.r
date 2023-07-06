@@ -7,7 +7,7 @@ library(scales)
 setwd("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/")
 
 ##reading the data in-------->>
-
+#base expression
 base <- read.csv("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/aracne_all_conditions/vst.txt", header = TRUE, sep = "\t", row.names = 1)[, 1 : 5]
 
 regs <- read.table("/home/ngrinber/projects/niab/gene_regulatory_network/install/WT_minion_TF_expression_only_head.txt", header = TRUE, sep = "\t")[, 1]
