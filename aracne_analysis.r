@@ -6,66 +6,33 @@ library(scales)
 
 setwd("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/")
 
-##reading the data in-------->>
-#base expression
-base <- read.csv("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/aracne_all_conditions/vst.txt", header = TRUE, sep = "\t", row.names = 1)[, 1 : 5]
-
-regs <- read.table("/home/ngrinber/projects/niab/gene_regulatory_network/install/WT_minion_TF_expression_only_head.txt", header = TRUE, sep = "\t")[, 1]
-
-raw_dat <- lapply(1 : 4, FUN = function(i) {
-    read.csv(sprintf("aracne_all_conditions/vst_conditon_%s.txt", i), sep = '\t', row.names = 1)
-})
-degs <- lapply(1 : 4, FUN = function(i) {
-    read.csv(sprintf("l2FC_tables/CN_data_condition%s_DEG.txt", i), header = FALSE)[,1]
-})
-tfs <- lapply(1 : 4, FUN = function(i) {
-    read.csv(sprintf("aracne_all_conditions/transcription_factors_conditon_%s.txt", i), header = FALSE)[,1]
-})
-##reading the data in-------->>
-
-
 tri_regs <- c("g6430", "g6432")
 tri_genes <- c("g6429", "g6431", "g6426", "g6434", "g6435", "g6436", "g6437")
 
-# plotting gene expression for the tri-genes in the 4 conditions (usinng raw data)
-tri_dat <- lapply(1 : 4, FUN = function(i) {
-    tmp <- raw_dat[[i]][rownames(raw_dat[[i]]) %in% c(tri_regs, tri_genes), ]
-    tmp <- lapply(1 : 7, FUN = function(k) {
-        rowMeans(tmp[, (1 + 5 * (k - 1)) : (5 * k)])
-    }) %>% do.call(cbind, .) %>% data.frame()
-    colnames(tmp) <- 1 : ncol(tmp)
-    tmp$gene <- rownames(tmp)
-    tmp$cond <- i
-    tmp
-}) %>% do.call(rbind, .)
-# tri_dat0 <- base[rownames(base) %in% c(tri_regs, tri_genes),]
-# tri_dat0 <- rowMeans(tri_dat0)
+TRI_GENES <- c("g6429" = "TRI4", "g6431" = "TRI5", "g6430" = "TRI6", "g6426" = "TRI8", "g6432" = "TRI10", "g6434" = "TRI11", "g6435" = "TRI12", "g6436" = "TRI13", "g6437" = "TRI14")
 
-tri_dat <- melt(tri_dat, id = c("gene", "cond"))
-setnames(tri_dat, c("variable", "value"), c("tp", "expr"))
-tri_dat$cond <- factor(tri_dat$cond)
-ggplot(data = tri_dat, aes(x = as.numeric(tp), y = expr, colour = gene)) + geom_line() + facet_wrap(cond ~ .)
+##reading the data in-------->>
+regs <- read.table("/home/ngrinber/projects/niab/gene_regulatory_network/install/WT_minion_TF_expression_only_head.txt", header = TRUE, sep = "\t")[, 1]
+#differentially expressed genes, per condition 
+degs <- lapply(1 : 4, FUN = function(i) {
+    read.csv(sprintf("l2FC_tables/CN_data_condition%s_DEG.txt", i), header = FALSE)[,1]
+})
+#adding tri-genes to the list of differentially expressed genes (they might or might not be there already)
+degs <- lapply(degs, FUN = function(z) unique(c(tri_regs, tri_genes, z)))
+#regulators, per condition (differentially expressed regulators + the two tri-gene regulators)
+tfs <- lapply(1 : 4, FUN = function(i) {
+    read.csv(sprintf("/home/ngrinber/quorn_grn/L2FC_filtered_data/transcription_factors_conditon_%s.txt", i), header = FALSE)[,1]
+})
+##reading the data in-------->>
 
-#run on averaged data
-#run just on tri group
-
-#John's output
-aracne_output0 <- lapply(1 : 4, FUN = function(i) {
-    tmp <- read.csv(sprintf("aracne_all_conditions/link_list_condition_%s/network.txt", i), sep = "\t")
-    tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
-    tmp <- tmp[order(tmp$id),]
-    tmp$cond <- i
-    tmp$human <- "john"
-    tmp
-}) %>% do.call(rbind,.)
-
-#my output
+#NOTE: only tri_gene analysis is the same for old and new
+##new output
 aracne_output <- lapply(1 : 4, FUN = function(i) {
     tmp <- read.csv(sprintf("/home/ngrinber/quorn_grn/aracne_bootstraps/cond_%s/network.txt", i), sep = "\t")
     tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
     tmp <- tmp[order(tmp$id),]
     tmp$cond <- i
-    tmp$human <- "stas"
+    tmp$mode <- "new"
     tmp
 }) %>% do.call(rbind,.)
 
@@ -75,7 +42,7 @@ aracne_perm <- lapply(1 : 4, FUN = function(i) {
     tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
     tmp <- tmp[order(tmp$id),]
     tmp$cond <- i
-    tmp$human <- "stas_perm"
+    tmp$mode <- "new_perm"
     tmp
 }) %>% do.call(rbind,.)
 
@@ -85,7 +52,7 @@ aracne_tri <- lapply(1 : 4, FUN = function(i) {
         tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
         tmp <- tmp[order(tmp$id),]
         tmp$cond <- i
-        tmp$human <- "stas_tri_genes"
+        tmp$mode <- "new_tri_genes"
         return(tmp)
     }
 }) %>% do.call(rbind,.)
@@ -94,43 +61,81 @@ aracne_vst <- read.csv("/home/ngrinber/quorn_grn/aracne_bootstraps/vst_nobase/ne
 aracne_vst$id <- paste(aracne_vst$Regulator, aracne_vst$Target, sep = "_")
 aracne_vst <- aracne_vst[order(aracne_vst$id),]
 aracne_vst$cond <- "all"
-aracne_vst$human <- "vst"
+aracne_vst$mode <- "vst_new"
 
-all_output <- rbind(aracne_output0, aracne_output, aracne_perm, aracne_tri)
+all_output <- rbind(aracne_output, aracne_perm, aracne_tri)
+
+##old output
+output_old <- lapply(1 : 4, FUN = function(i) {
+    tmp <- read.csv(sprintf("/home/ngrinber/quorn_grn/aracne_bootstraps_old/cond_%s/network.txt", i), sep = "\t")
+    tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
+    tmp <- tmp[order(tmp$id),]
+    tmp$cond <- i
+    tmp$mode <- "old"
+    tmp
+}) %>% do.call(rbind,.)
+
+#permuted output
+perm_old <- lapply(1 : 4, FUN = function(i) {
+    tmp <- read.csv(sprintf("/home/ngrinber/quorn_grn/aracne_bootstraps_old/cond_perm_%s/network.txt", i), sep = "\t")
+    tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
+    tmp <- tmp[order(tmp$id),]
+    tmp$cond <- i
+    tmp$mode <- "old_perm"
+    tmp
+}) %>% do.call(rbind,.)
+
+tri_old <- lapply(1 : 4, FUN = function(i) {
+    tmp <- read.csv(sprintf("/home/ngrinber/quorn_grn/aracne_bootstraps_old/tri_genes_cond_%s/network.txt", i), sep = "\t")
+    if(nrow(tmp) > 0) {
+        tmp$id <- paste(tmp$Regulator, tmp$Target, sep = "_")
+        tmp <- tmp[order(tmp$id),]
+        tmp$cond <- i
+        tmp$mode <- "old_tri_genes"
+        return(tmp)
+    }
+}) %>% do.call(rbind,.)
+
+vst_old <- read.csv("/home/ngrinber/quorn_grn/aracne_bootstraps_old/vst_nobase/network.txt", sep = "\t")
+vst_old$id <- paste(vst_old$Regulator, vst_old$Target, sep = "_")
+vst_old <- vst_old[order(vst_old$id),]
+vst_old$cond <- "all"
+vst_old$mode <- "vst_old"
+
+output_old <- rbind(output_old, perm_old, tri_old)
+
 ##reading the data in-------->>
 
 #how many of the tri-gene connections are in the output? (per condition)
-ids <- expand.grid(tri_regs, tri_genes)
+ids <- expand.grid(tri_regs, c(tri_regs, tri_genes))
 ids <- paste(ids[,1], ids[,2], sep = "_")
 
-table(all_output$cond, all_output$id %in% ids, all_output$human)
+table(all_output$cond, all_output$id %in% ids, all_output$mode)
+table(output_old$cond, output_old$id %in% ids, output_old$mode)
 
-#how many of tri__regs in TFs and in the list of differentially expressed genes?
-sapply(tfs, FUN = function(z) sum(c(tri_regs, tri_genes) %in% z))
-sapply(degs, FUN = function(z) sum(c(tri_regs, tri_genes) %in% z))
+all_output[all_output$id %in% ids,]
+output_old[output_old$id %in% ids,]
 
+dd <- all_output[all_output$id %in% ids & all_output$mode == "new_tri_genes" & all_output$cond == 2,]
+plot(graph_from_data_frame(dd, directed = TRUE, vertices = NULL))
 
 #concordance between differentially expressed genes between different conditions: Jaccard index
-mat_deg <- matrix(NA, nrow = 4, ncol = 4)
-mat_tf <- matrix(NA, nrow = 4, ncol = 4)
 mat_id <- matrix(NA, nrow = 4, ncol = 4)
 for(i in 1 : 3) {
     for(j in (i + 1) : 4) {
-        mat_deg[i, j] <- sum(degs[[i]] %in% degs[[j]])/min(length(degs[[i]]), length(degs[[j]]))
-        mat_tf[i, j] <- sum(tfs[[i]] %in% tfs[[j]])/min(length(tfs[[i]]), length(tfs[[j]]))
-        mat_id[i, j] <- sum(aracne_output[[i]]$id %in% aracne_output[[j]]$id)/min(nrow(aracne_output[[i]]), nrow(aracne_output[[j]]))
+        mat_id[i, j] <- sum(aracne_output[aracne_output$cond == i,]$id %in% aracne_output[aracne_output$cond == j,]$id)/min(nrow(aracne_output[aracne_output$cond == i,]), nrow(aracne_output[aracne_output$cond == j,]))
     }
 }
 
-#comparing my run with John's
-par(mfrow = c(2, 2))
-for(i in 1 : 4) hist(-log10(aracne_output[[i]]$pvalue), main = paste0("condition ", i))
+#comparing the new run with the old
+comb_output <- rbind(all_output, output_old)
+comb_output$mode <- factor(comb_output$mode, c("new", "old", "new_tri_genes", "old_tri_genes", "new_perm", "old_perm"))
+ggplot(all_output, aes(y = MI, x = mode, fill = mode)) + geom_boxplot() + facet_wrap(cond ~ .)
+ggplot(comb_output, aes(y = MI, x = mode, fill = mode)) + geom_boxplot() + facet_wrap(cond ~ .)
 
-ggplot(all_output, aes(y = MI, x = human, fill = human)) + geom_boxplot() + facet_wrap(cond ~ .)
-ggplot(all_output, aes(y = ..density.., x = MI, fill = human)) + geom_histogram(alpha = 0.5) + facet_wrap(cond ~ .)
+ggplot(rbind(all_output, aracne_vst), aes(y = MI, x = mode, fill = mode)) + geom_boxplot()
+ggplot(rbind(output_old, vst_old), aes(y = MI, x = mode, fill = mode)) + geom_boxplot()    
 
-ggplot(rbind(all_output, aracne_vst), aes(y = MI, x = human, fill = human)) + geom_boxplot()
-    
 #pairwise comaprison of MI between differentn conditions (for those pairs that exist for both)
 par(mfrow = c(2, 3))
 for(i in 1 : 3) {
@@ -143,49 +148,8 @@ for(i in 1 : 3) {
     }
 }
 
-#######CREATING DATASETS FOR DYNGENIE3
-#creating permuted datasets-------->>
-setwd("/home/ngrinber/quorn_grn/")
 
-for(i in 1 : 4) {
-    z <- read.csv(sprintf("L2FC_filtered_data/L2FC_filter_condition_%s.txt", i), sep = "\t")
-    for(j in 2 : ncol(z)) {
-        z[,j] <- sample(z[,j])
-    }
-    colnames(z)[1] <- ""
-    write.table(z, file = sprintf("L2FC_filtered_data/L2FC_filter_condition_perm_%s.txt", i), sep = "\t", row.names = FALSE, quote = FALSE)
-}
-#creating permuted datasets-------->>
-
-#combining all conditions
-deg <- unique(unlist(degs))
-
-vst_base <- read.table("/home/ngrinber/quorn_grn/vst.txt", header = TRUE)
-vst_base <- vst_base[rownames(vst_base) %in% deg, ]
-vst <- vst_base[, -(1 : 5)]
-vst <- data.frame(rownames(vst), vst)
-vst_base <- data.frame(rownames(vst_base), vst_base)
-colnames(vst)[1] <- ''
-colnames(vst_base)[1] <- ''
-
-write.table(vst_base, file = "L2FC_filtered_data/vst_L2FC_filtered.txt", sep = "\t", row.names = FALSE, quote = FALSE)
-write.table(vst, file = "L2FC_filtered_data/vst_L2FC_filtered_nobase.txt", sep = "\t", row.names = FALSE, quote = FALSE)
-write.table(regs[regs %in% deg], file = "L2FC_filtered_data/tfs_combined.txt", row.names = FALSE, quote = FALSE, col.names = FALSE)
-
-#creating data just for tri-genes
-tri_dat <- lapply(1 : 4, FUN = function(i) {
-    tmp <- raw_dat[[i]][rownames(raw_dat[[i]]) %in% c(tri_regs, tri_genes), ]
-    tmp <- data.frame(gene = rownames(tmp), tmp)
-    write.table(tmp, file = sprintf("L2FC_filtered_data/L2FC_filter_condition_tri_%s.txt", i), sep = "\t", row.names = FALSE, quote = FALSE)
-})
-write.table(tri_regs, file = "L2FC_filtered_data/tri_regs.txt", row.names = FALSE, quote = FALSE, col.names = FALSE)
-
-
-
-
-
-
-
+##
 
 
 
