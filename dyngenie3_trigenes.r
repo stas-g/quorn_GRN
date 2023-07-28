@@ -8,20 +8,23 @@ source("/home/ngrinber/projects/niab/gene_regulatory_network/install/dynGENIE3.R
 setwd("/home/ngrinber/quorn_grn/L2FC_filtered_data")
 
 FILE <- "/home/ngrinber/quorn_grn/dynGENIE3_results"
-##reading the data in-------->>
-
-degs <- lapply(1 : 4, FUN = function(i) {
-    read.csv(sprintf("l2FC_tables/CN_data_condition%s_DEG.txt", i), header = FALSE)[,1]
-})
-tfs <- lapply(1 : 4, FUN = function(i) {
-    read.csv(sprintf("transcription_factors_conditon_%s.txt", i), header = FALSE)[,1]
-})
+MY_FOLDER = "/home/ngrinber/quorn_grn/L2FC_filtered_data"
+JOHN_PATH = "/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/"
 ##reading the data in-------->>
 
 tri_regs <- c("g6430", "g6432")
 tri_genes <- c("g6429", "g6431", "g6426", "g6434", "g6435", "g6436", "g6437")
 
 TRI_GENES <- c("g6429" = "TRI4", "g6431" = "TRI5", "g6430" = "TRI6", "g6426" = "TRI8", "g6432" = "TRI10", "g6434" = "TRI11", "g6435" = "TRI12", "g6436" = "TRI13", "g6437" = "TRI14")
+
+degs <- lapply(1 : 4, FUN = function(i) {
+    x <- read.csv(file.path(JOHN_PATH, sprintf("l2FC_tables/CN_data_condition%s_DEG.txt", i)), header = FALSE)[,1]
+    unique(c(tri_regs, tri_genes, x))
+})
+tfs <- lapply(1 : 4, FUN = function(i) {
+    read.csv(file.path(MY_FOLDER, sprintf("transcription_factors_conditon_%s.txt", i)), header = FALSE)[,1]
+})
+##reading the data in-------->>
 
 #--------------------------------------------------------------------
 #separating conditions; creating expr dfs per rep (list of 4 conditions containing list of 5 (rep) time-series, 7 times points each)
@@ -47,7 +50,7 @@ time_points <- list(tvec, tvec, tvec, tvec, tvec)
 setwd("/home/ngrinber/projects/niab/gene_regulatory_network/install/")
 for(cond in 1 : 4) {
   mod <- dynGENIE3(TS_data[[cond]], time_points, regulators = 
-  [[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
+  tfs[[cond]], tree.method = "RF", K = "sqrt", verbose = TRUE)
   res <- get.link.list(mod$weight.matrix)
   res$id <- paste(res$regulatory.gene, res$target.gene, sep = "_")
   res <- res[order(res$id),]

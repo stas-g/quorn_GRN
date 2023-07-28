@@ -3,6 +3,7 @@ library(magrittr)
 library(ggplot2)
 library(data.table)
 library(scales)
+library(igraph)
 
 setwd("/home/ngrinber/projects/niab/gene_regulatory_network/carbon_nitrogen_data/")
 
@@ -60,6 +61,12 @@ dyn3_trigene[, c("regulatory.gene", "target.gene") := list(TRI_GENES[regulatory.
 dyn3_trigene[, "id" := paste(regulatory.gene, target.gene, cond, sep = "_")]
 ##reading the data & results in-------->>
 
+col_ <- ifelse(dyn3_trigene$cond == 1, "#E69F00", ifelse(dyn3_trigene$cond == 2, "#56B4E9", "#CC79A7"))
+plot(graph_from_data_frame(aracne_trigene), vertex.size = 23, edge.width = aracne_trigene$MI, edge.color = as.factor(aracne_trigene$cond))
+plot(graph_from_data_frame(dyn3_trigene), vertex.size = 23, edge.width = aracne_trigene$weight, edge.color = as.factor(dyn3_trigene$cond))
+plot(graph_from_data_frame(dyn3_trigene), vertex.size = 23, edge.width = aracne_trigene$weight, edge.color = col_)
+
+table(dyn3_trigene$id %in% aracne_trigene$id)
 #concordance between dyngenie3 and aracne
 dyn_output_signif <- dyn_output[weight > crit_val,]
 table(aracne_output$id %in% dyn_output_signif$id)

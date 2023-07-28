@@ -36,7 +36,7 @@ dyn_res0 <- lapply(1 : 4, FUN = function(i) {
     out <- readRDS(file.path(FILE, sprintf("cond%s_RF_sqrt.rds", i)))
     out$cond <- i
     out$mode <- "data"
-    out
+    out[out$weight > 0, ]
 }) 
 
 dyn_perm0 <- lapply(1 : 4, FUN = function(i) {
@@ -47,7 +47,7 @@ dyn_perm0 <- lapply(1 : 4, FUN = function(i) {
     out
 }) 
 
-dyn_res <- lapply(dyn_res0, FUN = function(x) x[x$weight > 0,]) %>% do.call(rbind, .)
+dyn_res <- do.call(rbind, dyn_res0)
 dyn_perm <- lapply(dyn_perm0, FUN = function(x) x[x$weight > 0,]) %>% do.call(rbind, .)
 
 dyn_all <- data.table(do.call(rbind, list(dyn_res, dyn_perm)))
@@ -65,7 +65,7 @@ old_res0 <- lapply(1 : 4, FUN = function(i) {
     out <- readRDS(file.path(FILE_OLD, sprintf("cond%s_RF_sqrt.rds", i)))
     out$cond <- i
     out$mode <- "data_old"
-    out
+    out[out$weight > 0, ]
 }) 
 
 old_perm0 <- lapply(1 : 4, FUN = function(i) {
@@ -76,7 +76,7 @@ old_perm0 <- lapply(1 : 4, FUN = function(i) {
     out
 }) 
 
-old_res <- lapply(old_res0, FUN = function(x) x[x$weight > 0,]) %>% do.call(rbind, .)
+old_res <- do.call(rbind, old_res0)
 old_perm <- lapply(old_perm0, FUN = function(x) x[x$weight > 0,]) %>% do.call(rbind, .)
 
 old_all <- data.table(do.call(rbind, list(old_res, old_perm)))
